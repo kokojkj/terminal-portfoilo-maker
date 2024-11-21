@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Terminal Portfolio</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.terminal/css/jquery.terminal.min.css"/>
+    <style>
+        body {
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            margin: 0;
+        }
+        .terminal {
+            height: 100%;
+            overflow: auto;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal" id="terminal"></div>
+    <script src="https://cdn.jsdelivr.net/npm/jquery"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.terminal/js/jquery.terminal.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let portfolioData = {
+                name: '',
+                title: 'Student',
+                skills: [],
+                socialMedia: {
+                    linkedin: '',
+                    github: '',
+                    twitter: '',
+                    instagram: '',
+                    facebook: '',
+                    youtube: '',
+                    behance: '',
+                    upwork: '',
+                    fiverr: ''
+                },
+                projects: [],
+                courses: [],
+                contact: '',
+                phone: '',
+                bio: '',
+                personalWebsite: ''
+            };
+
+            const createStages = [
+                { 
+                    prompt: "Enter your full name (or press Enter for 'Anonymous Hack Clubber'):", 
+                    stage: 'name',
+                    handler: function(input, terminal) {
+                        portfolioData.name = input.trim() || 'Anonymous Hack Clubber';
+                        terminal.echo(`Name set to: ${portfolioData.name}`);
+                        return true;
+                    }
+                },
+                { 
+                    prompt: "Enter your professional/academic title (or press Enter for 'High Schooler and Hack Clubber'):", 
+                    stage: 'title',
+                    handler: function(input, terminal) {
+                        portfolioData.title = input.trim() || 'High Schooler and Hack Clubber';
+                        terminal.echo(`Title set to: ${portfolioData.title}`);
+                        return true;
+                    }
+                },
+                { 
+                    prompt: "Write a short bio (1-2 sentences or press Enter for 'Passionate Hack Clubber.'):", 
+                    stage: 'bio',
+                    handler: function(input, terminal) {
+                        portfolioData.bio = input.trim() || 'Passionate Hack Clubber.';
+                        terminal.echo(`Bio set to: ${portfolioData.bio}`);
+                        return true;
+                    }
+                },
+                { 
+                    prompt: "Personal Website URL (optional):", 
+                    stage: 'website',
+                    handler: function(input, terminal) {
+                        portfolioData.personalWebsite = input.trim();
+                        terminal.echo(input ? `Website set to: ${input}` : "Website skipped.");
+                        return true;
+                    }
+                },
+                { 
+    prompt: "Enter skills (Format: SkillName-Level, e.g., 'Python-Advanced,JavaScript-Intermediate'):", 
+    stage: 'skills',
+    handler: function(input, terminal) {
+
+        const skills = input.split(',').map(s => {
+            const [name, level] = s.split('-');
+            return { 
+                name: name.trim(), 
+                level: level ? level.trim() : 'Beginner'
+            };
+        }).filter(s => s.name !== '');
+
+        if (skills.length === 0) {
+            terminal.echo("Please enter at least one skill.");
+            return false;
+        }
+        portfolioData.skills = skills;
+        terminal.echo(`Skills added: ${skills.map(s => `${s.name} (${s.level})`).join(', ')}`);
+        return true;
+    }
+},
+				{ 
+    prompt: "Enter your Projects (Format: ProjectName-Description-ProjectURL, e.g., 'Portfolio Website-Personal portfolio using React-https://myportfolio.com'):", 
+	
+    stage: 'projects',
+    handler: function(input, terminal) {
+
+        const projects = input.split(',').map(p => {
+            const parts = p.split('-').map(part => part.trim());
+            return { 
+                name: parts[0] || '', 
+                description: parts[1] || 'No description provided',
+                url: parts[2] || ''
+            };
+        }).filter(p => p.name);
+
+        if (projects.length === 0) {
+            terminal.echo("No projects added. Skipping projects.");
+            portfolioData.projects = [];
+            return true;
+        }
+        
+        portfolioData.projects = projects;
+        terminal.echo("Projects added:");
+        projects.forEach(project => {
+            terminal.echo(`- ${project.name}: ${project.description}`);
+            if (project.url) {
+                terminal.echo(`  URL: ${project.url}`);
+            }
+        });
+        return true;
+    }
+},
+              { 
+    prompt: "Courses taken (Format: CourseName-Platform-Date-CertificateURL, e.g., 'Web Development-Coursera-2023-https://coursera.org/cert/123'):", 
+    stage: 'courses',
+    handler: function(input, terminal) {
+        const courseInputs = input.trim().split(',');
+        
+        const courses = courseInputs.map(courseStr => {
+            const parts = courseStr.split('-').map(part => part.trim());
+            
+            if (parts.length === 0 || !parts[0]) {
+                return null;
+            }
+            
+            return { 
+                name: parts[0], 
+                platform: parts[1] || 'Unknown Platform', 
+                date: parts[2] || 'unknown date',
+                certificateUrl: parts[3] || ''
+            };
+        }).filter(course => course !== null && course.name);
+
+        if (courses.length === 0) {
+            terminal.echo("No Courses added. Skipping Courses.");
+            portfolioData.courses = [];
+            return true;
+        }
+        
+        portfolioData.courses = courses;
+        terminal.echo("Courses added:");
+        courses.forEach(course => {
+            terminal.echo(`- ${course.name} (${course.platform}, ${course.date})`);
+            if (course.certificateUrl) {
+                terminal.echo(`  Certificate: ${course.certificateUrl}`);
+            }
+        });
+        return true;
+    }
+},
+                { prompt: "LinkedIn URL (optional):", stage: 'linkedin', handler: socialMediaHandler('linkedin') },
+                { prompt: "GitHub URL (optional):", stage: 'github', handler: socialMediaHandler('github') },
+                { prompt: "Twitter/X URL (optional):", stage: 'twitter', handler: socialMediaHandler('twitter') },
+                { prompt: "Instagram URL (optional):", stage: 'instagram', handler: socialMediaHandler('instagram') },
+                { prompt: "Facebook URL (optional):", stage: 'facebook', handler: socialMediaHandler('facebook') },
+                { prompt: "YouTube URL (optional):", stage: 'youtube', handler: socialMediaHandler('youtube') },
+                { prompt: "Behance URL (optional):", stage: 'behance', handler: socialMediaHandler('behance') },
+                { prompt: "Upwork URL (optional):", stage: 'upwork', handler: socialMediaHandler('upwork') },
+                { prompt: "Fiverr URL (optional):", stage: 'fiverr', handler: socialMediaHandler('fiverr') },
+                { 
+                    prompt: "Contact Email:", 
+                    stage: 'contact',
+                    handler: function(input, terminal) {
+                        portfolioData.contact = input.trim();
+                        terminal.echo(`Contact email set to: ${input}`);
+                        return true;
+                    }
+                },
+                { 
+                    prompt: "Phone Number (optional):", 
+                    stage: 'phone',
+                    handler: function(input, terminal) {
+                        portfolioData.phone = input.trim();
+                        terminal.echo(input ? `Phone number set to: ${input}` : "Phone number skipped.");
+                        return true;
+                    }
+                }
+            ];
+
+            function socialMediaHandler(platform) {
+                return function(input, terminal) {
+                    portfolioData.socialMedia[platform] = input.trim();
+                    terminal.echo(input ? `${capitalize(platform)} set to: ${input}` : `${capitalize(platform)} skipped.`);
+                    return true;
+                };
+            }
+
+            function capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+
+            function generatePortfolioLink() {
+                const encodedPortfolio = btoa(JSON.stringify(portfolioData));
+                return `${window.location.origin}${window.location.pathname}?portfolio=${encodedPortfolio}`;
+            }
+
+            async function shortenLink(longUrl) {
+                try {
+                    const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to shorten link');
+                    }
+                    return await response.text();
+                } catch (error) {
+                    console.error('Link shortening error:', error);
+                    return longUrl; 
+                }
+            }
+
+            $('#terminal').terminal({
+                help: function() {
+                    this.echo("Portfolio Terminal Commands:");
+                    this.echo("1. create - Create/Update Portfolio");
+                    this.echo("2. whoami - View Portfolio Details");
+                    this.echo("3. skills - List Skills");
+                    this.echo("4. social - Show Social Links");
+                    this.echo("5. share - Copy Portfolio Link");
+                    this.echo("6. clear - Clear Terminal");
+                    this.echo("7. help - Show Commands");
+                    this.echo("8. about - Learn about the Creator");
+                    this.echo("9. courses - List Completed Courses");
+                },
+                about: function() {
+                    this.echo("[[b;cyan;]Portfolio Terminal Maker]");
+                    this.echo("By Kirolos Gerges");
+                    this.echo("");
+                    this.echo("[[b;yellow;]Project Description:]");
+                    this.echo("this is an interactive web terminal portfolio maker designed to help hack clubbers");
+                    this.echo("make cool Portfolios quickly and easily.");
+                    this.echo("");
+                    this.echo("");
+                    this.echo("[[b;blue;]How to Reach Me :]");
+                    this.echo("My GitHub: https://github.com/kokojkj");
+                    this.echo("My Email: gkoko9266@gmail.com");
+                    this.echo("");
+                    this.echo("[[b;red;]coded with ❤️ for the Hack Club Community !]");
+                },
+                create: function() {
+                    const terminal = this;
+                    let currentStageIndex = 0;
+
+                    terminal.push(function(input) {
+                        const currentStage = createStages[currentStageIndex];
+                        const result = currentStage.handler(input, terminal);
+
+                        if (result === true) {
+                            currentStageIndex++;
+                            
+                            if (currentStageIndex >= createStages.length) {
+                                terminal.pop(); 
+                                const portfolioLink = generatePortfolioLink();
+                                
+                                shortenLink(portfolioLink).then(shortLink => {
+                                    terminal.echo("Creation Complete!");
+                                    terminal.echo("Your Shareable Portfolio Link:");
+                                    terminal.echo(shortLink);
+                                    
+                                    navigator.clipboard.writeText(shortLink)
+                                        .then(() => terminal.echo("the link is copied to clipboard!"))
+                                        .catch(error => terminal.echo("Failed to copy link"));
+                                });
+                                
+                                return;
+                            }
+
+                            terminal.set_prompt(createStages[currentStageIndex].prompt);
+                        }
+                    }, {
+                        prompt: createStages[0].prompt,
+                        name: 'create'
+                    });
+                },
+                whoami: function() {
+                    if (!portfolioData.name) {
+                        this.echo("No portfolio set. Use 'create' to create portfolio.");
+                        return;
+                    }
+                    this.echo(`Name: ${portfolioData.name}`);
+                    this.echo(`Title: ${portfolioData.title}`);
+                    this.echo(`Bio: ${portfolioData.bio}`);
+                    if (portfolioData.personalWebsite) {
+                        this.echo(`Website: ${portfolioData.personalWebsite}`);
+                    }
+                    this.echo(`Email: ${portfolioData.contact}`);
+                    if (portfolioData.phone) {
+                        this.echo(`Phone: ${portfolioData.phone}`);
+                    }
+                    
+                    if (portfolioData.skills.length > 0) {
+                        this.echo("\nSkills:");
+                        portfolioData.skills.forEach(skill => {
+                            this.echo(`- ${skill.name} (${skill.level})`);
+                        });
+                    }
+
+                    if (portfolioData.courses.length > 0) {
+                        this.echo("\nCourses:");
+                        portfolioData.courses.forEach(course => {
+                            this.echo(`- ${course.name} (${course.platform}, ${course.date})`);
+                        });
+                    }
+                },
+                skills: function() {
+                    if (portfolioData.skills.length === 0) {
+                        this.echo("No skills added. Use 'create' to add skills.");
+                        return;
+                    }
+                    this.echo("Skills:");
+                    portfolioData.skills.forEach(skill => {
+                        this.echo(`- ${skill.name} (${skill.level})`);
+                    });
+                },
+                courses: function() {
+                    if (portfolioData.courses.length === 0) {
+                        this.echo("No courses added. Use 'create' to add courses.");
+                        return;
+                    }
+                    this.echo("Completed Courses:");
+                    portfolioData.courses.forEach(course => {
+                        this.echo(`- ${course.name} (${course.platform}, ${course.date})`);
+                    });
+                },
+                social: function() {
+                    const socialLinks = portfolioData.socialMedia;
+                    const platforms = Object.keys(socialLinks).filter(platform => socialLinks[platform]);
+                    
+                    if (platforms.length === 0) {
+                        this.echo("No social media links set.");
+                        return;
+                    }
+                    
+                    this.echo("Social Media Links:");
+                    platforms.forEach(platform => {
+                        this.echo(`${capitalize(platform)}: ${socialLinks[platform]}`);
+                    });
+                },
+                share: async function() {
+                    if (!portfolioData.name) {
+                        this.echo("No portfolio to share. Use 'create' to create your portfolio.");
+                        return;
+                    }
+
+                    const portfolioLink = generatePortfolioLink();
+                    
+                    try {
+                        const shortLink = await shortenLink(portfolioLink);
+                        
+                        await navigator.clipboard.writeText(shortLink);
+                        
+                        this.echo(`Shortened Portfolio Link: ${shortLink}`);
+                        this.echo("Link copied to clipboard!");
+                    } catch (error) {
+                        this.echo("Failed to generate short link: " + error.message);
+                        await navigator.clipboard.writeText(portfolioLink);
+                        this.echo(`Used original link: ${portfolioLink}`);
+                    }
+                },
+                clear: function() {
+                    this.clear();
+                }
+            }, {
+                greetings: 'Welcome to portfolio Maker Terminal! Type "help" for commands.',
+                prompt: '> '
+            });
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedPortfolio = urlParams.get('portfolio');
+            
+            if (encodedPortfolio) {
+                try {
+                    const decodedPortfolio = JSON.parse(atob(encodedPortfolio));
+                    portfolioData = decodedPortfolio;
+                    $('#terminal').terminal().echo("[[b;green;]Loading Portfolio Successful!]");
+                    $('#terminal').terminal().echo(`[[b;cyan;]Greetings from ${portfolioData.name}! Welcome to my Portfolio!]`);
+                    $('#terminal').terminal().echo("[[b;cyan;]Enjoy exploring the Terminal!]");
+                } catch (e) {
+                    console.error("Failed to load portfolio:", e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
